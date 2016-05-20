@@ -3741,7 +3741,7 @@ catch(err) {
 /* jshint ignore:start */
 
 if (!runningTests) {
-  require("ember-impagination-demo/app")["default"].create({"name":"ember-impagination-demo","version":"0.0.0+46568447"});
+  require("ember-impagination-demo/app")["default"].create({"name":"ember-impagination-demo","version":"0.0.0+5a4f9ca6"});
 }
 
 /* jshint ignore:end */

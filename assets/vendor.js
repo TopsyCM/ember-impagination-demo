@@ -21,6 +21,30 @@ var runningTests = false;
     requirejs: requirejs
   };
 
+  requirejs = require = requireModule = function(name) {
+    stats.require++;
+    return findModule(name, '(require)').module.exports;
+  };
+
+  function resetStats() {
+    stats = {
+      define: 0,
+      require: 0,
+      reify: 0,
+      build: 0,
+      modules: 0,
+      exports: 0,
+      ensureBuild: 0,
+      resolve: 0,
+      resolveRelative: 0,
+      findModule: 0,
+    };
+    requirejs._stats = stats;
+  }
+
+  var stats;
+  resetStats();
+
   loader = {
     noConflict: function(aliases) {
       var oldName, newName;
@@ -62,6 +86,7 @@ var runningTests = false;
   var defaultDeps = ['require', 'exports', 'module'];
 
   function Module(name, deps, callback, alias) {
+    stats.modules ++;
     this.id        = uuid++;
     this.name      = name;
     this.deps      = !deps.length && callback.length ? defaultDeps : deps;
@@ -84,6 +109,7 @@ var runningTests = false;
   };
 
   Module.prototype.exports = function() {
+    stats.exports ++;
     if (this.finalized) {
       return this.module.exports;
     } else {
@@ -107,6 +133,7 @@ var runningTests = false;
   };
 
   Module.prototype.reify = function() {
+    stats.reify++;
     var deps = this.deps;
     var dep;
     var reified = this.reified;
@@ -139,7 +166,9 @@ var runningTests = false;
   };
 
   Module.prototype.build = function() {
+    stats.ensureBuild++;
     if (this.state === FAILED || this.state === LOADED) { return; }
+    stats.build++;
     this.state = FAILED;
     this.reify()
     this.exports();
@@ -147,6 +176,7 @@ var runningTests = false;
   };
 
   define = function(name, deps, callback) {
+    stats.define++;
     if (arguments.length < 2) {
       unsupportedModule(arguments.length);
     }
@@ -180,11 +210,8 @@ var runningTests = false;
     throw new Error('Could not find module `' + name + '` imported from `' + referrer + '`');
   }
 
-  requirejs = require = requireModule = function(name) {
-    return findModule(name, '(require)').module.exports;
-  };
-
   function findModule(name, referrer) {
+    stats.findModule++;
     var mod = registry[name] || registry[name + '/index'];
 
     while (mod && mod.isAlias) {
@@ -198,7 +225,9 @@ var runningTests = false;
   }
 
   function resolve(child, name) {
+    stats.resolve++;
     if (child.charAt(0) !== '.') { return child; }
+    stats.resolveRelative++;
 
     var parts = child.split('/');
     var nameParts = name.split('/');
@@ -231,6 +260,7 @@ var runningTests = false;
   };
 
   requirejs.clear = function() {
+    resetStats();
     requirejs.entries = requirejs._eak_seen = registry = {};
     seen = {};
   };
@@ -259,7 +289,7 @@ var runningTests = false;
 })(this);
 
 ;/*!
- * jQuery JavaScript Library v2.2.3
+ * jQuery JavaScript Library v2.2.4
  * http://jquery.com/
  *
  * Includes Sizzle.js
@@ -269,7 +299,7 @@ var runningTests = false;
  * Released under the MIT license
  * http://jquery.org/license
  *
- * Date: 2016-04-05T19:26Z
+ * Date: 2016-05-20T17:23Z
  */
 
 (function( global, factory ) {
@@ -325,7 +355,7 @@ var support = {};
 
 
 var
-	version = "2.2.3",
+	version = "2.2.4",
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
@@ -5266,13 +5296,14 @@ jQuery.Event.prototype = {
 	isDefaultPrevented: returnFalse,
 	isPropagationStopped: returnFalse,
 	isImmediatePropagationStopped: returnFalse,
+	isSimulated: false,
 
 	preventDefault: function() {
 		var e = this.originalEvent;
 
 		this.isDefaultPrevented = returnTrue;
 
-		if ( e ) {
+		if ( e && !this.isSimulated ) {
 			e.preventDefault();
 		}
 	},
@@ -5281,7 +5312,7 @@ jQuery.Event.prototype = {
 
 		this.isPropagationStopped = returnTrue;
 
-		if ( e ) {
+		if ( e && !this.isSimulated ) {
 			e.stopPropagation();
 		}
 	},
@@ -5290,7 +5321,7 @@ jQuery.Event.prototype = {
 
 		this.isImmediatePropagationStopped = returnTrue;
 
-		if ( e ) {
+		if ( e && !this.isSimulated ) {
 			e.stopImmediatePropagation();
 		}
 
@@ -6220,19 +6251,6 @@ function getWidthOrHeight( elem, name, extra ) {
 		val = name === "width" ? elem.offsetWidth : elem.offsetHeight,
 		styles = getStyles( elem ),
 		isBorderBox = jQuery.css( elem, "boxSizing", false, styles ) === "border-box";
-
-	// Support: IE11 only
-	// In IE 11 fullscreen elements inside of an iframe have
-	// 100x too small dimensions (gh-1764).
-	if ( document.msFullscreenElement && window.top !== window ) {
-
-		// Support: IE11 only
-		// Running getBoundingClientRect on a disconnected node
-		// in IE throws an error.
-		if ( elem.getClientRects().length ) {
-			val = Math.round( elem.getBoundingClientRect()[ name ] * 100 );
-		}
-	}
 
 	// Some non-html elements return undefined for offsetWidth, so check for null/undefined
 	// svg - https://bugzilla.mozilla.org/show_bug.cgi?id=649285
@@ -8124,6 +8142,7 @@ jQuery.extend( jQuery.event, {
 	},
 
 	// Piggyback on a donor event to simulate a different one
+	// Used only for `focus(in | out)` events
 	simulate: function( type, elem, event ) {
 		var e = jQuery.extend(
 			new jQuery.Event(),
@@ -8131,27 +8150,10 @@ jQuery.extend( jQuery.event, {
 			{
 				type: type,
 				isSimulated: true
-
-				// Previously, `originalEvent: {}` was set here, so stopPropagation call
-				// would not be triggered on donor event, since in our own
-				// jQuery.event.stopPropagation function we had a check for existence of
-				// originalEvent.stopPropagation method, so, consequently it would be a noop.
-				//
-				// But now, this "simulate" function is used only for events
-				// for which stopPropagation() is noop, so there is no need for that anymore.
-				//
-				// For the 1.x branch though, guard for "click" and "submit"
-				// events is still used, but was moved to jQuery.event.stopPropagation function
-				// because `originalEvent` should point to the original event for the constancy
-				// with other events and for more focused logic
 			}
 		);
 
 		jQuery.event.trigger( e, null, elem );
-
-		if ( e.isDefaultPrevented() ) {
-			event.preventDefault();
-		}
 	}
 
 } );
