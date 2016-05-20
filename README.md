@@ -1,3 +1,9 @@
+# Modified Ember-impagination-demo
+
+This is modification of the [demo](http://thefrontside.github.io/ember-impagination) for [ember-impagination](https://github.com/thefrontside/ember-impagination). It produces a great many deprecation warnings. The main change is the component that consumes the dataset. Instead of a scrolling system, two records are displayed and controls are provided to step forward and backward. This implementation is an approximation of a production site.
+
+What follows is the original readme accompanying the demo project.
+
 # Ember-impagination-demo
 
 This README outlines the details of collaborating on this Ember application.
@@ -50,4 +56,3 @@ Specify what it takes to deploy your app.
 * Development Browser Extensions
   * [ember inspector for chrome](https://chrome.google.com/webstore/detail/ember-inspector/bmdblncegkenkacieihfhpjfppoconhi)
   * [ember inspector for firefox](https://addons.mozilla.org/en-US/firefox/addon/ember-inspector/)
-

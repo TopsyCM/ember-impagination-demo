@@ -1,0 +1,31 @@
+{{#layout-component}}
+
+<div class="demo_inputs">
+  <label for="read_offset">Initial Read Offset:</label>
+  {{input value=initialReadOffset type=number id="read_offset"}}
+  <label for="load_horizon">Load Horizon:</label>
+  {{input value=loadHorizon type=number id="load_horizon"}}
+  <label for="page_size">Page Size:</label>
+  {{input value=pageSize type=number id="page_size"}}
+
+  {{input type="checkbox" id="use_ember_collection" checked=emberCollection}}
+  <label for="use_ember_collection">Toggle Ember Collection</label>
+</div>
+
+<div class="demo_dataset-wrapper">
+  {{#impagination-dataset fetch=fetch page-size=pageSize load-horizon=loadHorizon
+    read-offset=initialReadOffset
+    on-observe=(action "observeDataset") as |records|}}
+
+    {{record-player pages=records.pages records=records loadHorizon=loadHorizon}}
+    <div class="demo_records-wrapper">
+      <div class="demo_records-list-container" style="height: 500px; width: 600px;">
+        {{step-records records=records}}
+      </div>
+    </div>
+
+    <div class="demo_read-offset">Current Read Offset: {{records.readOffset}} </div>
+  {{/impagination-dataset}}
+</div>
+
+{{/layout-component}}
